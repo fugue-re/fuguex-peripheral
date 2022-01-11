@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use thiserror::Error;
 
 use crate::polling::{
-    PollingPeripheral,
+    PollingPeripheralHandler,
     Error as PoolingHandlerError,
 };
 
@@ -13,17 +13,17 @@ use fugue::ir::{
     Address,
 };
 use fuguex::state::{
-    AsState, 
+    State,
     pcode::PCodeState,
+    StateOps,
     pcode::Error as PCodeError
-    
 };
 use fuguex::concrete::hooks::{ClonableHookConcrete, HookConcrete};
 use fugue::bytes::{Order};
-
+use fuguex::hooks::types::{HookAction, HookOutcome, Error as HookError};
 
 #[derive(Debug, Error)]
-pub enum Error {
+pub enum MyError {
     #[error(transparent)]
     PCode(#[from] PCodeError),
     #[error("`{0}` is not a valid register for the specified architecture")]
@@ -35,12 +35,19 @@ pub enum Error {
     MemoryPoolingHandleOutputFailed {source: PoolingHandlerError},
 }
 
+impl From<MyError> for HookError<MyError> {
+    fn from(e: MyError) -> Self {
+        HookError::State(e)
+    }
+}
+
 // S: State which impl AsState<PCodeState<u8, Order>>
 // P: PollingPeripheral<Input=Address, Output=Address, State=S>
 // Order: Endian
 #[derive(Debug, Clone)]
 pub struct MemoryPollingPeripheral<S, P, O> 
-    where P: PollingPeripheral<Input=Address, Output=Address, Order=O, State=S>,
+    where P: PollingPeripheralHandler<Input=Address, Output=Address, Order=O>,
+          S: StateOps,
           O: Order,
 {
     address_range: (Address, Address),
@@ -49,7 +56,8 @@ pub struct MemoryPollingPeripheral<S, P, O>
 }
 
 impl<S, P, O> MemoryPollingPeripheral<S, P, O> 
-    where P: PollingPeripheral<Input=Address, Output=Address, Order=O, State=S>,
+    where P: PollingPeripheralHandler<Input=Address, Output=Address, Order=O>,
+          S: StateOps,
           O: Order,
 {
     pub fn peripheral(&self) -> Arc<Mutex<P>> {
@@ -63,7 +71,7 @@ impl<S, P, O> MemoryPollingPeripheral<S, P, O>
 }
 
 pub struct MemoryPollingPeripheralBuilder<S, P, O> 
-    where P: PollingPeripheral<Input=Address, Output=Address, Order=O, State=S> {
+    where P: PollingPeripheralHandler<Input=Address, Output=Address, Order=O> {
     peripheral: P,
     state: PhantomData<S>,
     address_range: (Address, Address)
@@ -71,10 +79,11 @@ pub struct MemoryPollingPeripheralBuilder<S, P, O>
 
 // Address_range: (start, end)
 impl<S, P, O> MemoryPollingPeripheralBuilder<S, P, O> 
-    where P: PollingPeripheral<Input=Address, Output=Address, Order=O, State=S>,
-            O: Order,
+    where P: PollingPeripheralHandler<Input=Address, Output=Address, Order=O>,
+          S: State + StateOps,
+          O: Order,
 {
-    pub fn new(peripheral_in: P, muexe_state: &mut S, address_range: (Address, Address)) -> Result<Self, Error> {
+    pub fn new(peripheral_in: P, muexe_state: &mut PCodeState<u8, O>, address_range: (Address, Address)) -> Result<Self, MyError> {
         let mut sel = Self {
             peripheral : peripheral_in,
             state: PhantomData,
@@ -89,7 +98,7 @@ impl<S, P, O> MemoryPollingPeripheralBuilder<S, P, O>
         self
     }
 
-    pub fn build(self) -> Result<MemoryPollingPeripheral<S, P, O>, Error> {
+    pub fn build(self) -> Result<MemoryPollingPeripheral<S, P, O>, MyError> {
         Ok(MemoryPollingPeripheral {
             address_range: self.address_range,
             // regisiters: self.registers,
@@ -99,27 +108,31 @@ impl<S, P, O> MemoryPollingPeripheralBuilder<S, P, O>
     }
 }
 
-impl<S, P, O> HookConcrete for MemoryPollingPeripheral<S, P, O>
-where S: AsState<PCodeState<u8, O>>,
-      P: PollingPeripheral<Input=Address, Output=Address, Order=O, State=S> {
-    type State = S;
-    fn hook_memory_read(&mut self, state: &mut Self::State, address: &Address, size: usize) -> Result<(), Error> {
+impl<S: 'static, P: 'static, O> HookConcrete for MemoryPollingPeripheral<S, P, O>
+where S: State + StateOps ,
+      P: PollingPeripheralHandler<Input=Address, Output=Address, Order=O> , 
+      O: Order 
+{
+    type State = PCodeState<u8, O>;        // TOOD: make it useful for universal endian
+    type Error = MyError;
+    type Outcome = String;
+    fn hook_memory_read(&mut self, state: &mut Self::State, address: &Address, size: usize) -> Result<HookOutcome<HookAction<Self::Outcome>>, HookError<Self::Error>> {
         let (min, max) = self.address_range;
         if min<= *address && *address<= max {
-            self.peripheral.lock().unwrap().handle_input(state, &address).map_err(|e| Error::MemoryPoolingHandleInputFailed{source: e})?;
+            self.peripheral.lock().unwrap().handle_input(state, &address).map_err(|e| MyError::MemoryPoolingHandleInputFailed {source: e})?;
         }
-        Ok(())
+        Ok(HookAction::Pass.into())
     }
-
-    fn hook_memory_write(&mut self, state: &mut Self::State, address: &Address, size: usize, value: &[u8]) -> Result<(), Error> {
+ 
+    fn hook_memory_write(&mut self, state: &mut Self::State, address: &Address, size: usize, value: &[u8]) ->  Result<HookOutcome<HookAction<Self::Outcome>>, HookError<Self::Error>>{
         let (min, max) = self.address_range;
         if min<= *address && *address <= max {
-            self.peripheral.lock().unwrap().handle_output(state, &address, value).map_err(|e| Error::MemoryPoolingHandleOutputFailed{source: e})?;
+            self.peripheral.lock().unwrap().handle_output(state, &address, value).map_err(|e| MyError::MemoryPoolingHandleOutputFailed{source: e})?;
         }
-        Ok(())
+        Ok(HookAction::Pass.into())
     }
 }
 
-impl<S, P, O> ClonableHookConcrete for MemoryPollingPeripheral<S, P, O>
-where S: AsState<PCodeState<u8, O>> + Clone,
-      P: PollingPeripheral<Input=Address, Output=Address, Order= O, State=S> { }
+impl<S: 'static, P: 'static, O> ClonableHookConcrete for MemoryPollingPeripheral<S, P, O>
+where S: State + StateOps,
+      P: PollingPeripheralHandler<Input=Address, Output=Address, Order= O>, O: Order { }

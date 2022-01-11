@@ -1,13 +1,10 @@
+use fugue::bytes::{Order};
 use thiserror::Error;
+use thiserror;
 
 use fuguex::state::{
-    AsState, 
     pcode::PCodeState,
-    State as FuguexState
 };
-
-pub mod register;
-pub use register::{RegisterPollingPeripheral, RegisterPollingPeripheralBuilder};
 
 pub mod memory;
 pub use memory::{MemoryPollingPeripheral, MemoryPollingPeripheralBuilder};
@@ -17,22 +14,25 @@ pub enum Error {
     // OtherError(#[from] PCodeError),
     #[error("`{0}` is not a valid register for the specified architecture")]
     InvalidRegister(String),
-
-    #[error("write to memory failed")]
-    MemoryWriteFailed,
-    #[error("read from memory failed")]
-    MemoryReadFailed,
+    #[error("handle input failed")]
+    HandleInputFailed,
+    #[error("handle output failed")]
+    HandleOutputFailed,
+    #[error("Init failed")]
+    InitFailed,
+    #[error("OtherError: faile at component {0}")]
+    HandlerError(String),
+    
 }
 
 
 
-pub trait PollingPeripheral: Clone + Send + Sync {
+pub trait PollingPeripheralHandler: Clone + Send + Sync {
     type Input;
     type Output;
-    type Order;
-    type State: AsState<PCodeState<u8, Self::Order>>;
+    type Order : Order;
 
-    fn init(&mut self, state: &mut Self::State) -> Result<(), Error>;
-    fn handle_input(&mut self, state: &mut Self::State, input: &Self::Input) -> Result<(), Error>;
-    fn handle_output(&mut self, state: &mut Self::State, output: &Self::Output, value: &[u8]) -> Result<(), Error>;
+    fn init(&mut self, state: &mut  PCodeState<u8, Self::Order>) -> Result<(), Error>;
+    fn handle_input(&mut self, state: &mut  PCodeState<u8, Self::Order>, input: &Self::Input) -> Result<(), Error>;
+    fn handle_output(&mut self, state: &mut  PCodeState<u8, Self::Order>, output: &Self::Output, value: &[u8]) -> Result<(), Error>;
 }
