@@ -263,7 +263,9 @@ impl<S, O> RSCan<S, O>
         if self.select_vcan_mode {
             return Err("push CAN msg not supported in vcan mode");
         } else {
-            self.data_queue.push_back(CANFrame::new(can_id, &data.to_le_bytes(), false, false).unwrap());
+            let mut data_tmp = [0u8; 8];
+            O::write_u64(&mut data_tmp, data);
+            self.data_queue.push_back(CANFrame::new(can_id, &data_tmp, false, false).unwrap());
             return Ok(());
         }
     }
@@ -282,7 +284,7 @@ impl<S, O> RSCan<S, O>
 
     pub fn get_reg_val(&self, state: &PCodeState<u8, O>, name: &str) -> Result<u32, Error>{
         let reg_addr = self.regisiters.get(name).unwrap();
-        let reg_val : u32 = u32::from_le_bytes(state.view_values(reg_addr, 4).unwrap().try_into().unwrap());
+        let reg_val : u32 = O::read_u32(state.view_values(reg_addr, 4).unwrap());
 
         return Ok(reg_val);
     }
@@ -344,11 +346,15 @@ where S: AsState<PCodeState<u8, O>>,
         // Set Receive FIFO Buffer Empty status and set everythings else as normal
         // let rfsts = self.get_reg_val(state.state_mut(), "RFSTS0").unwrap();
         let addr_rfsts = self.get_reg_addr("RFSTS0").unwrap();      
-        state.state_mut().set_values(*addr_rfsts, &0x01u32.to_le_bytes()).unwrap();
+        let mut val_tmp = [0u8; 4];
+        O::write_u32(&mut val_tmp, 0x01);
+        state.state_mut().set_values(*addr_rfsts, &val_tmp).unwrap();
 
         // Init gloabl status reg
+        O::write_u32(&mut val_tmp, 0x00);
+        state.state_mut().set_values(*addr_rfsts, &val_tmp).unwrap();
         let addr_gsts = self.get_reg_addr("GSTS").unwrap();
-        state.state_mut().set_values(*addr_gsts, &0x00u32.to_le_bytes()).unwrap();
+        state.state_mut().set_values(*addr_gsts, &val_tmp).unwrap();
 
 
 
@@ -358,21 +364,25 @@ where S: AsState<PCodeState<u8, O>>,
     // Handle firmware reading from address
     // Peripheral -> Firmware
     fn handle_input(&mut self, state: &mut PCodeState<u8, O>, input: &Self::Input) -> std::result::Result<(), polling::Error> {
+        let mut val_tmp = [0u8; 4];
+
         if input == self.get_reg_addr("TMSTS0").unwrap(){
             let value_var = state.state_ref().view_values(*input, 4).unwrap();
             info!("Reading from TMSTS0, value {:?}", value_var);
         } else if input == self.get_reg_addr("C0STS").unwrap(){
             let reg_addr = self.regisiters.get("C0STS").unwrap();
             let reg_val = 0x80u32;          // Communication is ready
-            state.state_mut().set_values(*reg_addr, &reg_val.to_le_bytes()).unwrap();
+            O::write_u32(&mut val_tmp, reg_val);
+            state.state_mut().set_values(*reg_addr, &val_tmp).unwrap();
         } else if input == self.get_reg_addr("C0ERFL").unwrap() {
             let reg_addr = self.regisiters.get("C0ERFL").unwrap();
-            state.state_mut().set_values(*reg_addr, &0x0u32.to_le_bytes()).unwrap();
+            O::write_u32(&mut val_tmp, 0x0u32);
+            state.state_mut().set_values(*reg_addr, &val_tmp).unwrap();
         }
         else if input == self.get_reg_addr("RFSTS0").unwrap(){
             let msg_counter: u8 = self.data_queue.len().try_into().expect("Too many messages in the CAN data queue");
             let reg_addr = self.regisiters.get("RFSTS0").unwrap();
-            let mut reg_val: u32 = u32::from_le_bytes( state.state_ref().view_values(*reg_addr, 4).unwrap().try_into().unwrap());
+            let mut reg_val: u32 = O::read_u32(state.state_ref().view_values(*reg_addr, 4).unwrap());
             if msg_counter > 0 {
                 reg_val = reg_val & 0xFFFF00FE;     // Clear RFEMP bits and RFMC bits indicate there are unread message
                 reg_val = reg_val | ((msg_counter as u32) << 8);    // Update RFMC bits with the number of unread message
@@ -380,7 +390,8 @@ where S: AsState<PCodeState<u8, O>>,
                 // Empty 
                 reg_val = 0x01;
             }
-            state.state_mut().set_values(*reg_addr, &reg_val.to_le_bytes()).unwrap(); 
+            O::write_u32(&mut val_tmp, reg_val); 
+            state.state_mut().set_values(*reg_addr, &val_tmp).unwrap(); 
             let value = state.state_ref().view_values(*input, 4).unwrap();
             info!("Reading from RFSTS0, Number of unread CAN msg: {} , orgi val: {:?}, changed: {:X}", msg_counter, value, reg_val);  //????? value updated after its read, so the result is not changing
         } else if input == self.get_reg_addr("RFPTR0").unwrap() {
@@ -391,7 +402,8 @@ where S: AsState<PCodeState<u8, O>>,
             let reg_val = ((data_len as u64) << 28) as u32 | timestamp as u32;
             // Write the value back
             let reg_addr = self.regisiters.get("RFPTR0").unwrap();
-            state.state_mut().set_values(*reg_addr, &reg_val.to_le_bytes()).unwrap();  
+            O::write_u32(&mut val_tmp, reg_val); 
+            state.state_mut().set_values(*reg_addr, &val_tmp).unwrap();  
             info!("Reading from RFPTR0, returning 0x{:08x}", reg_val);
         } else if input == self.get_reg_addr("RFID0").unwrap() {
             // if code is reading RFID then the code is preparing to read can data, so we populate ID and Data
@@ -417,10 +429,12 @@ where S: AsState<PCodeState<u8, O>>,
             let addr_rfid0 = self.get_reg_addr("RFID0").unwrap();
             if can_id & !0x7FFu32 > 0 {
                 // Extended ID
-                state.state_mut().set_values(*addr_rfid0, &0x8000000u32.to_le_bytes()).unwrap();
+                O::write_u32(&mut val_tmp, 0x8000000u32); 
+                state.state_mut().set_values(*addr_rfid0, &val_tmp).unwrap();
             } else {
                 // Normal ID
-                state.state_mut().set_values(*addr_rfid0, &(0x0000000u32 | (can_id & 0x7FFu32)).to_le_bytes() ).unwrap();
+                O::write_u32(&mut val_tmp, 0x0000000u32 | (can_id & 0x7FFu32)); 
+                state.state_mut().set_values(*addr_rfid0, &val_tmp ).unwrap();
             }
 
           
@@ -440,7 +454,9 @@ where S: AsState<PCodeState<u8, O>>,
             let mut can_data = can_frame.data().clone();
             // Write data to RFDF00 (Lower 4 bytes) and RFDF10 (Higher 4 bytes)
             let addr_rfdf00 = self.get_reg_addr("RFDF00").unwrap();
-            state.state_mut().set_values(*addr_rfdf00, &can_data.read_u64::<LE>().unwrap().to_le_bytes()).unwrap();  
+            let mut val_tmp_64 = [0u8; 8];
+            O::write_u64(&mut val_tmp_64, can_data.read_u64::<LE>().unwrap());
+            state.state_mut().set_values(*addr_rfdf00, &val_tmp_64).unwrap();  
             info!("Reading RFDF00 or RFDF10, populating data: {:?}", can_frame.data());
         } else {
             warn!("Reading from RSCAN address {} have not been implemented yet", input);
@@ -477,16 +493,16 @@ where S: AsState<PCodeState<u8, O>>,
                 }
 
                 // Read TMPTR for length
-                let tmptr : u32 = u32::from_le_bytes(state
-                    .state_ref().view_values(*self.get_reg_addr("TMPTR0").unwrap(), 4).unwrap().try_into().unwrap());
+                let tmptr : u32 = O::read_u32(state
+                    .state_ref().view_values(*self.get_reg_addr("TMPTR0").unwrap(), 4).unwrap());
                 // get data len from tmptr
                 let data_len = (tmptr & 0xF0000000u32) >> 28;
 
                 // get data from tmdf0 and tmdf1
-                let datal : u64= u64::from_le_bytes(state.state_ref()
-                    .view_values(*self.get_reg_addr("TMDF00").unwrap(), 4).unwrap().try_into().unwrap());
-                let datah : u64= u64::from_le_bytes(state.state_ref()
-                    .view_values(*self.get_reg_addr("TMDF10").unwrap(), 4).unwrap().try_into().unwrap());
+                let datal : u64= O::read_u64(state.state_ref()
+                    .view_values(*self.get_reg_addr("TMDF00").unwrap(), 4).unwrap());
+                let datah : u64= O::read_u64(state.state_ref()
+                    .view_values(*self.get_reg_addr("TMDF10").unwrap(), 4).unwrap());
                 let data :u64 = datal | (datah<<32);
                 // convert to vector
                 let mut data_slice = vec![];
