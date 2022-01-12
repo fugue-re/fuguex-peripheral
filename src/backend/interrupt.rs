@@ -48,10 +48,10 @@ impl <S: AsState<PCodeState<u8, E>>, E: Order>InterruptHandlerOverrider for Empt
 
     fn fire(
         &mut self,
-        trigger_count: u128,
-        state: &mut Self::State,
-        address: &Address,
-        operation: &StepState,
+        _trigger_count: u128,
+        _state: &mut Self::State,
+        _address: &Address,
+        _operation: &StepState,
     ) -> Result<Option<Address>, InterruptError> {
         Ok(None)
     }
