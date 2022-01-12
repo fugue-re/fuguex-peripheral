@@ -1,0 +1,41 @@
+[package]
+name = "fuguex-peripheral"
+version = "0.1.0"
+authors = ["Zitai Chen <zitaichen@outlook.com>" ]
+edition = "2021"
+
+[dependencies]
+bitvec = "0.22"
+thiserror = "1"
+parking_lot = "0.11"
+socketcan = "1.7"
+byteorder = "1"
+log = { version = "0.4", features = ["max_level_trace", "release_max_level_warn"] }
+
+interval-tree = { version = "0.1", registry = "fugue" }
+
+fugue = { version = "*", registry = "fugue" }
+fuguex = { version = "*", registry = "fugue", features = ["concrete"] }
+
+# [patch.fugue]
+# fuguex = { path = '../fuguex-core/fuguex', version = "*" }
+# fugue = { path = '../fugue-core/fugue-core', version = "*"}
+# fugue-idapro = { path = '../fugue-idapro', version = '*'}
+# fugue-ghidra = { path = '../fugue-ghidra', version = '*'}
+# fugue-db = { path = '../fugue-core/fugue-db', version = '*'}
+# fugue-ir = { path = '../fugue-core/fugue-ir', version = '*'}
+# fuguex-machine = { path = '../fuguex-core/fuguex-machine', version = '*'}
+# fuguex-state = { path = '../fuguex-core/fuguex-state', version = '*'}
+# fuguex-hooks = { path = '../fuguex-core/fuguex-hooks', version = '*'}
+# fuguex-concrete = { path = '../fuguex-core/fuguex-concrete', version = '*'}
+# fuguex-intrinsics = { path = '../fuguex-core/fuguex-intrinsics', version = '*'}
+# fuguex-loader = { path = '../fuguex-core/fuguex-loader', version = '*'}
+# fugue-concolic = { path = '../fugue-concolic', version = '*'}
+# fugue-static = { path = '../fugue-static', version = '*'}
+# fugue-arch = { path = '../fugue-core/fugue-arch', version = '*'}
+# fugue-bytes = { path = '../fugue-core/fugue-bytes', version = '*'}
+# fugue-bv = { path = '../fugue-core/fugue-bv', version = '*'}
+# fugue-fp = { path = '../fugue-core/fugue-fp', version = '*'}
+
+# [patch.'ssh://git@github.com:/fugue-re/fuguex-lib.git']
+# fuguex-lib = {path = "../fuguex-lib", version = "*"}
