@@ -119,7 +119,7 @@ where S: State + StateOps ,
     fn hook_memory_read(&mut self, state: &mut Self::State, address: &Address, size: usize) -> Result<HookOutcome<HookAction<Self::Outcome>>, HookError<Self::Error>> {
         let (min, max) = self.address_range;
         if min<= *address && *address<= max {
-            self.peripheral.lock().unwrap().handle_input(state, &address).map_err(|e| MyError::MemoryPoolingHandleInputFailed {source: e})?;
+            self.peripheral.lock().unwrap().handle_input(state, &address, size).map_err(|e| MyError::MemoryPoolingHandleInputFailed {source: e})?;
         }
         Ok(HookAction::Pass.into())
     }
@@ -127,7 +127,7 @@ where S: State + StateOps ,
     fn hook_memory_write(&mut self, state: &mut Self::State, address: &Address, size: usize, value: &[u8]) ->  Result<HookOutcome<HookAction<Self::Outcome>>, HookError<Self::Error>>{
         let (min, max) = self.address_range;
         if min<= *address && *address <= max {
-            self.peripheral.lock().unwrap().handle_output(state, &address, value).map_err(|e| MyError::MemoryPoolingHandleOutputFailed{source: e})?;
+            self.peripheral.lock().unwrap().handle_output(state, &address, value, size).map_err(|e| MyError::MemoryPoolingHandleOutputFailed{source: e})?;
         }
         Ok(HookAction::Pass.into())
     }

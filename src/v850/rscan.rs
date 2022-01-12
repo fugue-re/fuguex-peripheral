@@ -335,7 +335,7 @@ where S: AsState<PCodeState<u8, O>>,
     fn init(&mut self, state: &mut PCodeState<u8, O>) -> std::result::Result<(), polling::Error>{
         // Init CAN regs to default values
         let addr_tmsts = self.get_reg_addr("TMSTS0").unwrap();
-        state.state_mut().set_values(*addr_tmsts, &[0x00u8]); 
+        state.state_mut().set_values(*addr_tmsts, &[0x00u8]).unwrap();
         
         // TODO: use another thread for listensing to socketcan and populate a queue
         // thread::spawn(move || {
@@ -363,7 +363,7 @@ where S: AsState<PCodeState<u8, O>>,
     }
     // Handle firmware reading from address
     // Peripheral -> Firmware
-    fn handle_input(&mut self, state: &mut PCodeState<u8, O>, input: &Self::Input) -> std::result::Result<(), polling::Error> {
+    fn handle_input(&mut self, state: &mut PCodeState<u8, O>, input: &Self::Input, _size: usize) -> std::result::Result<(), polling::Error> {
         let mut val_tmp = [0u8; 4];
 
         if input == self.get_reg_addr("TMSTS0").unwrap(){
@@ -469,8 +469,9 @@ where S: AsState<PCodeState<u8, O>>,
     }
 
     // Handle firmware writting to address
+    // TODO: Check size of data
     // Firmware -> Peripheral
-    fn handle_output(&mut self, state: &mut PCodeState<u8, O>, output: &Self::Output, value: &[u8]) -> std::result::Result<(), polling::Error> {
+    fn handle_output(&mut self, state: &mut PCodeState<u8, O>, output: &Self::Output, value: &[u8], _size: usize) -> std::result::Result<(), polling::Error> {
         // Handle clear transmit buffer status
         if output == self.get_reg_addr("TMSTS0").unwrap() {
             info!("Writting to TMSTS0, value: {:?}", value);

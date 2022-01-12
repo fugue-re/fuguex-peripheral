@@ -33,6 +33,6 @@ pub trait PollingPeripheralHandler: Clone + Send + Sync {
     type Order : Order;
 
     fn init(&mut self, state: &mut  PCodeState<u8, Self::Order>) -> Result<(), Error>;
-    fn handle_input(&mut self, state: &mut  PCodeState<u8, Self::Order>, input: &Self::Input) -> Result<(), Error>;
-    fn handle_output(&mut self, state: &mut  PCodeState<u8, Self::Order>, output: &Self::Output, value: &[u8]) -> Result<(), Error>;
+    fn handle_input(&mut self, state: &mut  PCodeState<u8, Self::Order>, input: &Self::Input, size: usize) -> Result<(), Error>;
+    fn handle_output(&mut self, state: &mut  PCodeState<u8, Self::Order>, output: &Self::Output, value: &[u8], size: usize) -> Result<(), Error>;
 }
