@@ -46,7 +46,7 @@ pub enum Error {
 
 impl From<Error> for polling::Error {
     fn from(error: Error) -> polling::Error {
-        polling::Error::HandlerError("RSCan-peripheral".to_string() + format!("{:?}",error) )
+        polling::Error::HandlerError("RSCan-peripheral".to_string() + format!("{:?}",error).as_str() )
     }
 }
 

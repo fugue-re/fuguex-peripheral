@@ -37,7 +37,7 @@ pub enum MyError {
 
 impl From<MyError> for HookError<MyError> {
     fn from(e: MyError) -> Self {
-        HookError::State(e)
+        HookError::Hook(e)
     }
 }
 
