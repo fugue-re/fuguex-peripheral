@@ -192,9 +192,8 @@ where
 		let mut sp = state_mut.stack_pointer_value().unwrap();
 
 		// Save SR to the stack, copy priority level of accepted interrupt to I3-I0 in SR
-		let sr_reg_node = self.translator.register_by_name("sr").unwrap();
-		let sr_operand = Operand::from_varnode(&self.translator, *sr_reg_node);
-		let sr_val: u32 = state_mut.get_operand(&sr_operand).unwrap();
+		let sr_reg = state_mut.registers().register_by_name("sr").unwrap();
+		let sr_val: u32 = state_mut.get_operand(&sr_reg.into()).unwrap();
 
 		sp = sp - Address::from(4u32);		// Push Stack
 

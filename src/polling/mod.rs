@@ -27,7 +27,7 @@ pub enum Error {
 
 
 
-pub trait PollingPeripheralHandler: Clone + Send + Sync {
+pub trait PollingPeripheralHandler: Clone {
     type Input;
     type Output;
     type Order : Order;

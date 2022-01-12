@@ -27,7 +27,7 @@ impl From<InterruptError> for HookError<InterruptError> {
 }
 
 // If you need to override a interrupt handler then impl this trait
-pub trait InterruptHandlerOverrider: Send + Sync {
+pub trait InterruptHandlerOverrider: {
     type State: AsState<PCodeState<u8, Self::Endian>>;
     type Endian: Order;
     fn fire(
