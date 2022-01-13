@@ -35,9 +35,9 @@ pub enum MyError {
     MemoryPoolingHandleOutputFailed {source: PoolingHandlerError},
 }
 
-impl From<MyError> for HookError<MyError> {
-    fn from(e: MyError) -> Self {
-        HookError::Hook(e)
+impl From<PoolingHandlerError> for HookError<PCodeError> {
+    fn from(e: PoolingHandlerError) -> Self {
+        HookError::Hook(PCodeError::UnsupportedAddressSize(0))
     }
 }
 
@@ -83,7 +83,7 @@ impl<S, P, O> MemoryPollingPeripheralBuilder<S, P, O>
           S: State + StateOps,
           O: Order,
 {
-    pub fn new(peripheral_in: P, muexe_state: &mut PCodeState<u8, O>, address_range: (Address, Address)) -> Result<Self, MyError> {
+    pub fn new(peripheral_in: P, muexe_state: &mut PCodeState<u8, O>, address_range: (Address, Address)) -> Result<Self, PCodeError> {
         let mut sel = Self {
             peripheral : peripheral_in,
             state: PhantomData,
@@ -98,7 +98,7 @@ impl<S, P, O> MemoryPollingPeripheralBuilder<S, P, O>
         self
     }
 
-    pub fn build(self) -> Result<MemoryPollingPeripheral<S, P, O>, MyError> {
+    pub fn build(self) -> Result<MemoryPollingPeripheral<S, P, O>, PCodeError> {
         Ok(MemoryPollingPeripheral {
             address_range: self.address_range,
             // regisiters: self.registers,
@@ -114,12 +114,12 @@ where S: State + StateOps ,
       O: Order 
 {
     type State = PCodeState<u8, O>;        // TOOD: make it useful for universal endian
-    type Error = MyError;
+    type Error = PCodeError;
     type Outcome = String;
     fn hook_memory_read(&mut self, state: &mut Self::State, address: &Address, size: usize) -> Result<HookOutcome<HookAction<Self::Outcome>>, HookError<Self::Error>> {
         let (min, max) = self.address_range;
         if min<= *address && *address<= max {
-            self.peripheral.lock().unwrap().handle_input(state, &address, size).map_err(|e| MyError::MemoryPoolingHandleInputFailed {source: e})?;
+            self.peripheral.lock().unwrap().handle_input(state, &address, size)?;
         }
         Ok(HookAction::Pass.into())
     }
@@ -127,7 +127,7 @@ where S: State + StateOps ,
     fn hook_memory_write(&mut self, state: &mut Self::State, address: &Address, size: usize, value: &[u8]) ->  Result<HookOutcome<HookAction<Self::Outcome>>, HookError<Self::Error>>{
         let (min, max) = self.address_range;
         if min<= *address && *address <= max {
-            self.peripheral.lock().unwrap().handle_output(state, &address, value, size).map_err(|e| MyError::MemoryPoolingHandleOutputFailed{source: e})?;
+            self.peripheral.lock().unwrap().handle_output(state, &address, value, size)?;
         }
         Ok(HookAction::Pass.into())
     }
