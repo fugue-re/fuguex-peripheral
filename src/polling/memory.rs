@@ -36,7 +36,7 @@ pub enum MyError {
 }
 
 impl From<PoolingHandlerError> for HookError<PCodeError> {
-    fn from(e: PoolingHandlerError) -> Self {
+    fn from(_e: PoolingHandlerError) -> Self {
         HookError::Hook(PCodeError::UnsupportedAddressSize(0))
     }
 }

@@ -6,7 +6,6 @@ use crate::backend::EmptyInterruptHandlerOverrider;
 use fugue::ir::{
     Address,
 	Translator,
-	il::pcode::Operand,
 };
 use fuguex::state::{
     AsState, 
