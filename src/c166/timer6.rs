@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::ops::{RangeInclusive};
 use thiserror::Error;
 use bitvec::prelude::*;
-use interval_tree::{IntervalSet};
+use intervals::collections::{IntervalSet};
 use fuguex::state::{
     AsState, 
     pcode::PCodeState,
