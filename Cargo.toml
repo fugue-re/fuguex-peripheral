@@ -12,7 +12,7 @@ socketcan = "1.7"
 byteorder = "1"
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_warn"] }
 
-interval = { version = "0.1", registry = "fugue" }
+intervals = { version = "0.1", registry = "fugue" }
 
 fugue = { version = "*", registry = "fugue" }
 fuguex = { version = "*", registry = "fugue", features = ["concrete"] }
