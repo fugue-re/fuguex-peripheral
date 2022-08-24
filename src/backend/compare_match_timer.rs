@@ -18,7 +18,7 @@ use std::convert::TryInto;
 // If matched and counting forward, then overflow, 
 // if counting backwards, via versa
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CompareMatchTimer {
 	counter_start: bool,
 	current_tick: u128,

@@ -30,27 +30,52 @@ pub enum SuperHCMTError {
     #[error("`{0}` is not a valid register for the specified architecture")]
     InvalidRegister(String),
 }
+impl From<SuperHCMTError> for HookError<SuperHCMTError> {
+    fn from(error: SuperHCMTError) -> HookError<SuperHCMTError> {
+        HookError::Hook(error)
+    }
+}
 
 type Endian = BE;
 
-#[derive(Clone)]
-pub struct CompareMatchTimer <S>
+#[derive(Debug)]
+pub struct CompareMatchTimer <S, E>
 where
 	S: AsState<PCodeState<u8, Endian>>,
+	E:  Send + Sync + 'static
 {
-	translator: Arc<Translator>,
+	// translator: Arc<Translator>,
 	backend: (backend::CompareMatchTimer, backend::CompareMatchTimer),
 	interrupt: (backend::Interrupt, backend::Interrupt),
 	handler: (backend::InterruptHandler<EmptyInterruptHandlerOverrider<S, Endian>>,
 		backend::InterruptHandler<EmptyInterruptHandlerOverrider<S, Endian>>),
 	address_range: (Address, Address),
 	endian: PhantomData<Endian>,
+	error: PhantomData<E>,
 	
 }
+// NOTE: manual implementation avoids adding the trait bound `E: Clone`.
+impl<S, E> Clone for CompareMatchTimer<S, E> 
+where
+	S: AsState<PCodeState<u8, Endian>>,
+	E:  Send + Sync
+{
+    fn clone(&self) -> Self {
+        Self {
+			backend: self.backend.clone(),
+			interrupt: self.interrupt.clone(),
+			handler: self.handler.clone(),
+			address_range: self.address_range.clone(),
+			endian: self.endian.clone(),
+			error: self.error.clone(),
+        }
+    }
+}
 
-
-impl<S: AsState<PCodeState<u8, Endian>>> CompareMatchTimer<S> {
-	pub fn new(translator: Arc<Translator>) -> Self{
+impl<S: AsState<PCodeState<u8, Endian>>, E> CompareMatchTimer<S, E> 
+where E:  Send + Sync
+{
+	pub fn new() -> Self{
 		let mut cmt = backend::CompareMatchTimer::default();
 		let mut cmt1 = backend::CompareMatchTimer::default();
 		const ADDR_CMSTR:u64 = 0xfffec000; 
@@ -93,24 +118,26 @@ impl<S: AsState<PCodeState<u8, Endian>>> CompareMatchTimer<S> {
 		cmt1.map_function_addr_read(ADDR_CMCOR_1, 0xffff, 	&CMTFunName::get_compare_against);
 		cmt1.map_function_addr_write(ADDR_CMCOR_1, 0xffff, 	&CMTFunName::set_compare_against);
 		Self {
-			translator, 
+			// translator, 
 			backend: (cmt, cmt1),
 			interrupt: (backend::Interrupt::new("CMT0"), backend::Interrupt::new("CMT1")),
-			handler : (backend::InterruptHandler::Vector(Address::from(0x000002BCu32)),
-						backend::InterruptHandler::Vector(Address::from(0x000002c0u32))), //CMT1: 000002C0 IPR10 7-4, 3-0
+			handler : (backend::InterruptHandler::Vector(Address::from(0x000002BCu32)),   // CMI0 Channel Vector
+						backend::InterruptHandler::Vector(Address::from(0x000002c0u32))), //CMI1 Channel Vector: 000002C0 IPR10 7-4, 3-0
 			address_range: (Address::from(0xFFFEC000u32), Address::from(0xFFFEC00Cu32)), //Address::from(0xFFFEC00Cu32)),  
 			endian: PhantomData,
+			error: PhantomData,
 		}
 	}
 }
 
-impl <S: 'static> HookConcrete for CompareMatchTimer<S>
+impl <S: 'static, E> HookConcrete for CompareMatchTimer<S, E>
 where
-	S: AsState<PCodeState<u8, Endian>>
+	S: AsState<PCodeState<u8, Endian>>,
+	E: std::error::Error +  Send + Sync + 'static
 {
 
 	type State = PCodeState<u8, Endian>;
-	type Error = SuperHCMTError;
+	type Error = E;
 	type Outcome = String;
 
 	fn hook_architectural_step(&mut self, state: &mut Self::State, address: &Address, _operation: &StepState)
@@ -208,6 +235,7 @@ where
 
 		// Jump to the routine start address (non-delay branch)
 		return Ok(HookStepAction::Branch((1, routine_addr)).into());
+		// return Ok(HookStepAction::Branch(routine_addr).into());
 
 		
     }
@@ -280,6 +308,7 @@ where
 }
 
 
-impl<S: 'static> ClonableHookConcrete for CompareMatchTimer<S>
-where S: AsState<PCodeState<u8, Endian>> + Clone,
+impl<S: 'static, E> ClonableHookConcrete for CompareMatchTimer<S, E>
+where S: AsState<PCodeState<u8, Endian>>,
+	E: std::error::Error +  Send + Sync + 'static
     { }

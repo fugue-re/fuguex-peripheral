@@ -1,5 +1,6 @@
 
 use std::collections::LinkedList;
+use fuguex::state::State;
 use socketcan::CANFrame;
 use crate::polling::PollingPeripheralHandler;
 use crate::polling;
@@ -125,7 +126,7 @@ impl<'a> DerefMut for CanSocket<'a> {
 
 #[derive(Debug)]
 pub struct RSCan<S, O> 
-    where S: AsState<PCodeState<u8, O>>,
+    where S: AsState<PCodeState<u8, O>> + StateOps,
           O: Order
 { 
     socket: Option<Mutex<socketcan::CANSocket>>,
@@ -138,7 +139,7 @@ pub struct RSCan<S, O>
 }
 
 impl<S, O> Default for RSCan<S, O> 
-    where S: AsState<PCodeState<u8, O>>,
+    where S: AsState<PCodeState<u8, O>> + StateOps,
           O: Order
 {
     fn default() -> Self {
@@ -156,7 +157,7 @@ impl<S, O> Default for RSCan<S, O>
 }
 
 impl<S, O> Clone for RSCan<S, O> 
-    where S: AsState<PCodeState<u8, O>>,
+    where S: AsState<PCodeState<u8, O>> + StateOps,
           O: Order
 {
     fn clone(&self) -> Self {
@@ -176,7 +177,7 @@ impl<S, O> Clone for RSCan<S, O>
 
 
 impl<S, O> RSCan<S, O> 
-    where S: AsState<PCodeState<u8, O>>,
+    where S: AsState<PCodeState<u8, O>> + StateOps,
             O: Order 
 {
     fn get_peripheral_regs() -> HashMap<String, Address>{
@@ -284,7 +285,7 @@ impl<S, O> RSCan<S, O>
 
     pub fn get_reg_val(&self, state: &PCodeState<u8, O>, name: &str) -> Result<u32, Error>{
         let reg_addr = self.regisiters.get(name).unwrap();
-        let reg_val : u32 = O::read_u32(state.view_values(reg_addr, 4).unwrap());
+        let reg_val : u32 = O::read_u32(state.view_values(*reg_addr, 4).unwrap());
 
         return Ok(reg_val);
     }
@@ -292,7 +293,7 @@ impl<S, O> RSCan<S, O>
     // value: u8 in LE
     pub fn set_reg_value_u8(&self, state: &mut PCodeState<u8, O>, name: &str, value: u8)-> (){
         let reg_addr = self.regisiters.get(name).unwrap();
-        state.set_values(reg_addr, &[value]).unwrap();
+        state.set_values(*reg_addr, &[value]).unwrap();
         return ();
     }
 
@@ -325,7 +326,7 @@ impl<S, O> RSCan<S, O>
 
 // Implement as Polling Peripheral
 impl<S, O> PollingPeripheralHandler for RSCan<S, O> 
-where S: AsState<PCodeState<u8, O>>,
+where S: AsState<PCodeState<u8, O>> + StateOps,
       O: Order
 {
     type Input = Address;

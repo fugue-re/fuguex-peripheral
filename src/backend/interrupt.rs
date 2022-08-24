@@ -39,7 +39,7 @@ pub trait InterruptHandlerOverrider: {
      ) -> Result<Option<Address>, InterruptError>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EmptyInterruptHandlerOverrider<S: AsState<PCodeState<u8,E>>, E: Order > { state: PhantomData<S>, endian: PhantomData<E> }
 impl <S: AsState<PCodeState<u8, E>>, E: Order>InterruptHandlerOverrider for EmptyInterruptHandlerOverrider<S, E> {
     
@@ -59,7 +59,7 @@ impl <S: AsState<PCodeState<u8, E>>, E: Order>InterruptHandlerOverrider for Empt
 }
 
 // Interrupt Handler Types
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum InterruptHandler <O: InterruptHandlerOverrider> {
     Routine(Address),       // Address of a routine
     Vector(Address),        // Address of a pointer to a routine
@@ -86,7 +86,7 @@ impl <O: InterruptHandlerOverrider>InterruptHandler<O> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Interrupt  {
     name: String,
 	enabled: bool,

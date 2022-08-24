@@ -205,6 +205,7 @@ where
                 self.status = self.status.fire();
                 // Skip to handler
                 let hook_outcome: HookOutcome<_> = HookStepAction::Branch((1, handler_address)).into();
+                // let hook_outcome: HookOutcome<_> = HookStepAction::Branch(handler_address).into();
                 Ok(hook_outcome.state_changed(true))       // Indicate this hook has changed the next address to be executed
             }
         }
