@@ -3,6 +3,7 @@ use std::{collections::HashMap, any::TypeId};
 use std::sync::RwLock;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use fugue::fp::BitVec;
 use fugue::{ir::{
     Address,
     il::ecode::Location,
@@ -12,6 +13,7 @@ use fugue::{ir::{
 use fugue::bytes::{ByteCast};
 use fuguex::concrete::hooks::{ClonableHookConcrete, HookConcrete};
 use fuguex::hooks::types::{HookStepAction, HookOutcome, Error};
+// use fuguex::state::IntoStateValues;
 use fuguex::state::{
     State,
     pcode::PCodeState, StateOps};
@@ -307,36 +309,32 @@ where S: State + StateOps,
                                     continue;
                                 } 
                                 log::info!("solving result: ({}, {:?})", k, v);
+
+
+                                let value_to_set = v.unwrap();
                                 // convert to BE byte array or LE byte array
-                                let mut value_bytes = [0; 8];
-                                v.unwrap().into_bytes::<O>(&mut value_bytes);
+                                // let mut value_bytes = [0; 8];
+                                // v.unwrap().into_bytes::<O>(&mut value_bytes);
                                 // if is_little_endian {
                                 //     v.unwrap().into_bytes::<LE>(&mut value_bytes);
                                 // } else {
                                 //     v.unwrap().into_bytes::<BE>(&mut value_bytes);
                                 // }
-                                log::info!("writting to {}, with {:?}, size: {}", k, value_bytes, last_size);
+                                // v.unwrap().into_values::<O>(&mut value_bytes);
+                                
 
-                                // write value to state
-                                if is_little_endian{
-                                    // log::info!("le");
-                                    match last_size {
-                                        1 => {state.set_values(k, &value_bytes[0..1]).unwrap();},
-                                        2 => {state.set_values(k, &value_bytes[0..2]).unwrap();},
-                                        4 => {state.set_values(k, &value_bytes[0..4]).unwrap();},
-                                        8 => {state.set_values(k, &value_bytes[0..8]).unwrap();},
-                                        _ => { panic!("Unexpected value size ({}) for last load event", last_size);} 
-                                    };
-                                } else {
-                                    // log::info!("be");
-                                     match last_size {
-                                        1 => {state.set_values(k, &value_bytes[7..8]).unwrap();},
-                                        2 => {state.set_values(k, &value_bytes[6..8]).unwrap();},
-                                        4 => {state.set_values(k, &value_bytes[4..8]).unwrap();},
-                                        8 => {state.set_values(k, &value_bytes[0..8]).unwrap();},
-                                        _ => { panic!("Unexpected value size({}) for last load event", last_size);}
-                                    };
+                                // let state_values_mut = state.view_values_mut(k, last_size).unwrap();
+                                match last_size {
+                                    1 => state.write::<_, O, _>(k, value_to_set as u8).unwrap(),
+                                    2 => state.write::<_, O, _>(k, value_to_set as u16).unwrap(),
+                                    4 => state.write::<_, O, _>(k, value_to_set as u32).unwrap(),
+                                    8 => state.write::<_, O, _>(k, value_to_set as u64).unwrap(),
+                                    _ => {log::error!("Unexpected value size ({}) for last load event", last_size);}
                                 }
+                                let state_values = state.view_values(k, last_size).unwrap();
+                                log::info!("writting to {}, with {:?}, size: {}", k, state_values, last_size);
+
+
                                 // let mut val_test: [u8; 8] = [0; 8];
                                 // state.get_values(k, &mut val_test).unwrap();
                                 // log::debug!("tttttttest{:?}", val_test);
