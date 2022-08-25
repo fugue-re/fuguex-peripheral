@@ -48,7 +48,7 @@ pub struct DummyPeripheral<S, O: Order, E> {
     solver_default_vars: HashMap<String, u128>, // <name, values>
     solver: ConstraintSolver<O>,
     forgive_jump: u32,
-    forgive_fun_layer: u32,
+    forgive_fun_call: i32,
     forgive_branch_condition: u32,
 
     last_mem_read_event: (Address, Address, usize, u128),  // PC, ReadAddress, size in byte, EventCounter
@@ -70,7 +70,7 @@ impl <S, O: Order, E> Clone for DummyPeripheral<S, O, E> {
             last_reg_write_event: self.last_reg_write_event.clone(),
             solving_results: self.solving_results.clone(),
             forgive_jump: self.forgive_jump,
-            forgive_fun_layer: self.forgive_fun_layer,
+            forgive_fun_call: self.forgive_fun_call,
             forgive_branch_condition: self.forgive_branch_condition,
 
             solver: self.solver.clone(),
@@ -96,7 +96,7 @@ where S: State,
             last_reg_write_event: (Address::from(0u32), 0),
             solving_results: Arc::new(RwLock::new(HashMap::<Address, SolvingResult>::new())),
             forgive_jump: 0,
-            forgive_fun_layer: 0,
+            forgive_fun_call: 0,
             forgive_branch_condition: 0,
             
 
@@ -222,7 +222,6 @@ where S: State + StateOps,
                             log::debug!("create new solver");
                             self.solving_started = true;            // mark the start of solving
                             self.forgive_jump = 0;
-                            self.forgive_fun_layer = 0;
                             self.solver = ConstraintSolver::new();  // Create new solver
                             self.solver.set_default_variables(&self.solver_default_vars);   // set the default variables
                         }
@@ -349,11 +348,17 @@ where S: State + StateOps,
 
             },
             PCodeOp::ICall{destination: _} => {
-                self.solving_started = false; 
+                self.forgive_fun_call += 1;
+                if self.forgive_fun_call != 0 {
+                    self.solving_started = false;
+                    log::debug!("Function returns reached forgiven value, probably not a loop");
+                } else {
+                    log::debug!("Function return has been forgiven");
+                }
             },
             PCodeOp::Return { destination: _ } => {
-                self.forgive_fun_layer += 1;
-                if self.forgive_fun_layer > 0 {
+                self.forgive_fun_call -= 1;
+                if self.forgive_fun_call != 0 {
                     self.solving_started = false;
                     log::debug!("Function returns reached forgiven value, probably not a loop");
                 } else {
@@ -366,7 +371,7 @@ where S: State + StateOps,
             }
         }
 
-        if self.solving_started  && self.forgive_jump == 0 {
+        if self.solving_started  && self.forgive_jump == 0 && self.forgive_fun_call >= 0{
             // Do not add more constraint when a jump is forgiven, 
             // since other constraints on the rest of block may always be true
 
