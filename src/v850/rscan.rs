@@ -1,6 +1,5 @@
 
 use std::collections::LinkedList;
-use fuguex::state::State;
 use socketcan::CANFrame;
 use crate::polling::PollingPeripheralHandler;
 use crate::polling;

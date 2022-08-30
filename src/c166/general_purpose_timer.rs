@@ -17,6 +17,7 @@ use crate::backend;
 use crate::backend::compare_match_timer::FunName as CMTFunName;
 use std::convert::TryInto;
 use log::{info};
+use fuguex::state::pcode::Error as PCodeError;
 
 #[derive(Debug, Error)]
 pub enum C166GPTError {
@@ -84,7 +85,7 @@ where
 {
 
 	type State = PCodeState<u8, Endian>;
-	type Error = C166GPTError;
+	type Error = PCodeError;
 	type Outcome = String;
 
 	fn hook_architectural_step(&mut self, _state: &mut Self::State, _address: &Address, _operation: &StepState)

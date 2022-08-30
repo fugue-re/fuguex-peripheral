@@ -1,11 +1,9 @@
-use std::sync::Arc;
 use std::marker::PhantomData;
 use thiserror::Error;
 use byteorder::ByteOrder;
 use crate::backend::EmptyInterruptHandlerOverrider;
 use fugue::ir::{
     Address,
-	Translator,
 };
 use fuguex::state::{
     AsState, 
