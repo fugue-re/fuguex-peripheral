@@ -5,16 +5,16 @@ use crate::backend::EmptyInterruptHandlerOverrider;
 use fugue::ir::{
     Address,
 };
-use fuguex::state::{
+use metaemu::state::{
     AsState, 
     pcode::PCodeState,
     StateOps,
     pcode::Error as PCodeError
 };
-use fuguex::concrete::hooks::{ClonableHookConcrete, HookConcrete};
+use metaemu::concrete::hooks::{ClonableHookConcrete, HookConcrete};
 use fugue::bytes::{BE};
-use fuguex::hooks::types::{HookStepAction, HookAction, HookOutcome, Error as HookError};
-use fuguex::machine::StepState;
+use metaemu::hooks::types::{HookStepAction, HookAction, HookOutcome, Error as HookError};
+use metaemu::machine::StepState;
 
 use crate::backend;
 use crate::backend::compare_match_timer::FunName as CMTFunName;

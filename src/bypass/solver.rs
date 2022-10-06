@@ -1,22 +1,15 @@
-// use muexe_core_prelude::Address;
-// use muexe_core_prelude::LE;
 use fugue_concolic_solver_boolector::SolverContext;
+use fugue_concolic::backend::ValueSolver;
 use std::marker::PhantomData;
 use std::collections::HashMap;
-// use muexe_core::pcode::Operand;
-// use muexe_core::state::pcode::PCodeState;
-// use muexe_core::pcode::PCode;
 use std::fmt;
-// use muexe_symbex::PathManager;
-// use muexe_symbex::ExprBuilder;
 use log;
 
-// use muexe_core::types::int::{U24, U40, U48, U56};
 use fugue_concolic::expr::{
     SymExpr, IVar,
 };
 // use fugue_concolic::value::Value;
-use fuguex::state::{
+use metaemu::state::{
     pcode::PCodeState, };
 use fugue::bytes::{Order};
 

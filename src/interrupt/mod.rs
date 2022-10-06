@@ -11,15 +11,15 @@ use std::marker::PhantomData;
 use fugue::ir::{
     Address,
 };
-use fuguex::state::{
+use metaemu::state::{
 	AsState,
     StateOps,
     pcode::PCodeState,
 };
-use fuguex::machine::StepState;
+use metaemu::machine::StepState;
 use fugue::bytes::{Order};
-use fuguex::concrete::hooks::{ClonableHookConcrete, HookConcrete};
-use fuguex::hooks::types::{HookStepAction, HookOutcome, Error as HookError};
+use metaemu::concrete::hooks::{ClonableHookConcrete, HookConcrete};
+use metaemu::hooks::types::{HookStepAction, HookOutcome, Error as HookError};
 
 use crate::backend::InterruptHandlerOverrider;
 use std::convert::TryInto;

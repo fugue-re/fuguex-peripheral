@@ -4,14 +4,14 @@ use thiserror::Error;
 use fugue::ir::{
     Address,
 };
-use fuguex::state::{
+use metaemu::state::{
 	AsState,
     StateOps,
     pcode::PCodeState,
 };
-use fuguex::machine::StepState;
+use metaemu::machine::StepState;
 use fugue::bytes::{Order};
-use fuguex::hooks::types::Error as HookError;
+use metaemu::hooks::types::Error as HookError;
 
 #[derive(Debug, Error)]
 pub enum InterruptError {

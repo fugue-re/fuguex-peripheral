@@ -16,37 +16,7 @@ serde = { version = "1.0", features = ["derive"] }
 intervals = { version = "0.1", registry = "fugue" }
 
 fugue = { version = "*", registry = "fugue" }
-fuguex = { version = "*", registry = "fugue", features = ["concrete"] }
-fugue-concolic-solver-boolector = { version = "*", registry = "fugue-pvt" }
-fugue-concolic = { path = "../fugue-concolic", version = "*" }
+metaemu = { version = "0.3", features = ["concrete"] }
+fugue-concolic-solver-boolector = { git = "ssh://git@github.com/fugue-re/fugue-concolic-solver-boolector.git", version = '*'}
+fugue-concolic = { git = "ssh://git@github.com/fugue-re/fugue-concolic.git", branch="dev", version = "*" }
 
-
-# [patch.fugue]
-# fugue = { path = '../fugue-core/fugue-core', version = "*"}
-# fugue-arch = { path = '../fugue-core/fugue-arch', version = '*'}
-# fugue-bytes = { path = '../fugue-core/fugue-bytes', version = '*'}
-# fugue-bv = { path = '../fugue-core/fugue-bv', version = '*'}
-# fugue-fp = { path = '../fugue-core/fugue-fp', version = '*'}
-# fugue-db = { path = '../fugue-core/fugue-db', version = '*'}
-# fugue-ir = { path = '../fugue-core/fugue-ir', version = '*'}
-# fuguex = { path = '../fuguex-core/fuguex-core', version = "*" }
-# fuguex-machine = { path = '../fuguex-core/fuguex-machine', version = '*'}
-# fuguex-state = { path = '../fuguex-core/fuguex-state', version = '*'}
-# fuguex-hooks = { path = '../fuguex-core/fuguex-hooks', version = '*'}
-# fuguex-concrete = { path = '../fuguex-core/fuguex-concrete', version = '*'}
-# fuguex-intrinsics = { path = '../fuguex-core/fuguex-intrinsics', version = '*'}
-# fuguex-loader = { path = '../fuguex-core/fuguex-loader', version = '*'}
-
-# fugue-idapro = { path = '../fugue-idapro', version = '*'}
-# fugue-ghidra = { path = '../fugue-ghidra', version = '*'}
-# fugue-concolic = { path = '../fugue-concolic', version = '*'}
-# fugue-static = { path = '../fugue-static', version = '*'}
-
-# [patch.fugue-pvt]
-# fugue-concolic-solver-boolector = { path = '../fugue-concolic-solver-boolector', version = '*'}
-
-# [patch.'ssh://git@github.com:/fugue-re/fuguex-lib.git']
-# metaemu-lib = {path = "../metaemu-lib", version = "*"}
-
-# [patch.'ssh://git@github.com:/fugue-re/fuguex-peripheral.git']
-# metaemu-peripheral = {path = "../metaemu-peripheral", version = "*"}

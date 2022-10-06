@@ -11,13 +11,13 @@ use fugue::{ir::{
 }, bytes::{Order, BE, LE}
 };
 use fugue::bytes::{ByteCast};
-use fuguex::concrete::hooks::{ClonableHookConcrete, HookConcrete};
-use fuguex::hooks::types::{HookStepAction, HookOutcome, Error};
-// use fuguex::state::IntoStateValues;
-use fuguex::state::{
+use metaemu::concrete::hooks::{ClonableHookConcrete, HookConcrete};
+use metaemu::hooks::types::{HookStepAction, HookOutcome, Error};
+// use metaemu::state::IntoStateValues;
+use metaemu::state::{
     State,
     pcode::PCodeState, StateOps};
-use fuguex::machine::StepState;
+use metaemu::machine::StepState;
 use serde::{Serialize, Deserialize};
     
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -242,6 +242,9 @@ where S: State + StateOps,
                     self.solving_started = false;
                 }
             },
+            PCodeOp::IBranch { destination } =>{
+                // TODO for C166
+            },
             PCodeOp::CBranch { destination, condition } =>{
                 if self.solving_started {
                     let dest_addr = if let Operand::Address { value, size: _ } = destination {
@@ -348,21 +351,25 @@ where S: State + StateOps,
 
             },
             PCodeOp::ICall{destination: _} => {
-                self.forgive_fun_call += 1;
-                if self.forgive_fun_call != 0 {
-                    self.solving_started = false;
-                    log::debug!("Function returns reached forgiven value, probably not a loop");
-                } else {
-                    log::debug!("Function return has been forgiven");
+                if self.solving_started{
+                    self.forgive_fun_call += 1;
+                    if self.forgive_fun_call != 0 {
+                        self.solving_started = false;
+                        log::debug!("Function returns reached forgiven value, probably not a loop");
+                    } else {
+                        log::debug!("Function return has been forgiven");
+                    }
                 }
             },
             PCodeOp::Return { destination: _ } => {
-                self.forgive_fun_call -= 1;
-                if self.forgive_fun_call != 0 {
-                    self.solving_started = false;
-                    log::debug!("Function returns reached forgiven value, probably not a loop");
-                } else {
-                    log::debug!("Function return has been forgiven");
+                if self.solving_started{
+                    self.forgive_fun_call -= 1;
+                    if self.forgive_fun_call != 0 {
+                        self.solving_started = false;
+                        log::debug!("Function returns reached forgiven value, probably not a loop");
+                    } else {
+                        log::debug!("Function return has been forgiven");
+                    }
                 }
                 // self.solving_started = false;
             },

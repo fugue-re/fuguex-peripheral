@@ -4,20 +4,20 @@ use thiserror::Error;
 use fugue::ir::{
     Address,
 };
-use fuguex::state::{
+use metaemu::state::{
     AsState, 
     pcode::PCodeState,
     StateOps,
 };
-use fuguex::concrete::hooks::{ClonableHookConcrete, HookConcrete};
+use metaemu::concrete::hooks::{ClonableHookConcrete, HookConcrete};
 use fugue::bytes::{LE};
-use fuguex::hooks::types::{HookStepAction,HookAction, HookOutcome, Error as HookError};
-use fuguex::machine::StepState;
+use metaemu::hooks::types::{HookStepAction,HookAction, HookOutcome, Error as HookError};
+use metaemu::machine::StepState;
 use crate::backend;
 use crate::backend::compare_match_timer::FunName as CMTFunName;
 use std::convert::TryInto;
 use log::{info};
-use fuguex::state::pcode::Error as PCodeError;
+use metaemu::state::pcode::Error as PCodeError;
 
 #[derive(Debug, Error)]
 pub enum C166GPTError {

@@ -2,7 +2,7 @@ use fugue::bytes::{Order};
 use thiserror::Error;
 use thiserror;
 
-use fuguex::state::{
+use metaemu::state::{
     pcode::PCodeState,
 };
 

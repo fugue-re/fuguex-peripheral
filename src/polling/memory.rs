@@ -12,15 +12,15 @@ use crate::polling::{
 use fugue::ir::{
     Address,
 };
-use fuguex::state::{
+use metaemu::state::{
     State,
     pcode::PCodeState,
     StateOps,
     pcode::Error as PCodeError
 };
-use fuguex::concrete::hooks::{ClonableHookConcrete, HookConcrete};
+use metaemu::concrete::hooks::{ClonableHookConcrete, HookConcrete};
 use fugue::bytes::{Order};
-use fuguex::hooks::types::{HookAction, HookOutcome, Error as HookError};
+use metaemu::hooks::types::{HookAction, HookOutcome, Error as HookError};
 
 #[derive(Debug, Error)]
 pub enum MyError {

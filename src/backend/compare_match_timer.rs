@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use fugue::ir::{
     Address,
 };
-use fuguex::state::{
+use metaemu::state::{
 	AsState,
     pcode::PCodeState,
 	StateOps,

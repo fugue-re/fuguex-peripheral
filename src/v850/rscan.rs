@@ -7,7 +7,7 @@ use crate::polling;
 use fugue::ir::{
     Address,
 };
-use fuguex::state::{
+use metaemu::state::{
     AsState, 
     pcode::PCodeState, StateOps
 };
